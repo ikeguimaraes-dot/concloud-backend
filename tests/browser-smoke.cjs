@@ -176,7 +176,30 @@ const { mkdir } = require("node:fs/promises");
           const url = new URL(route.request().url());
           const path = url.pathname.replace("/api/internal/", "");
           let data;
-          if (path === "processes")
+          if (path === "pending")
+            data = {
+              items:
+                url.searchParams.get("ownerId") === "unassigned" ||
+                url.searchParams.get("kind") === "DETAILS"
+                  ? []
+                  : [
+                      {
+                        id: leadId,
+                        name: "Pendência sintética",
+                        ownerId: userId,
+                        ownerName: "Operador sintético",
+                        processId,
+                        requiredDocs: 5,
+                        missingDocs: 2,
+                        overdueTasks: 1,
+                        oldestDueAt: "2026-10-20T12:00:00Z",
+                        testPayment: true,
+                        total: 1,
+                      },
+                    ],
+              nextOffset: null,
+            };
+          else if (path === "processes")
             data = {
               items:
                 (!url.searchParams.get("workflow") ||
@@ -412,6 +435,52 @@ const { mkdir } = require("node:fs/promises");
           throw Error("Operations page overflow");
         await page.screenshot({
           path: `test-results/operations-${viewport.width}.png`,
+          fullPage: true,
+        });
+        await page
+          .getByRole("link", { name: "Pendências", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Pendências", exact: true })
+          .waitFor();
+        await page
+          .getByText("Faltam 2 de 5 documentos", { exact: true })
+          .waitFor();
+        await page
+          .getByLabel("Tipo de pendência", { exact: true })
+          .selectOption("OVERDUE");
+        await page
+          .getByText("1 tarefa(s) vencida(s)", { exact: true })
+          .waitFor();
+        await page
+          .getByLabel("Responsável pelas pendências")
+          .selectOption("unassigned");
+        await page
+          .getByText("Nenhuma pendência encontrada neste filtro.")
+          .waitFor();
+        await page
+          .getByLabel("Responsável pelas pendências")
+          .selectOption(userId);
+        await page
+          .getByRole("button", { name: "Processo e tarefas", exact: true })
+          .click();
+        await page
+          .getByRole("dialog", { name: "Processo de abertura" })
+          .waitFor();
+        await page
+          .getByRole("button", { name: "Fechar processo", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "Ficha e documentos", exact: true })
+          .waitFor();
+        if (
+          await page.evaluate(
+            () => document.documentElement.scrollWidth > innerWidth,
+          )
+        )
+          throw Error("Pending page overflow");
+        await page.screenshot({
+          path: `test-results/pending-${viewport.width}.png`,
           fullPage: true,
         });
         if (errors.length) throw Error(errors.join(";"));

@@ -38,3 +38,5 @@ npm run test:browser
 Contrato implementado no portal: `docs/internal-api.openapi.yaml`. Kanban operacional, revisões por versão e SLAs continuam nas próximas entregas; não há simulações dessas funções no painel.
 
 Evolução de documentação, funil e operação: [Entrega 2](docs/ENTREGA-2.md).
+
+Entrega 3: [gestão de pendências](docs/ENTREGA-3.md), com filtros por responsável, documentos faltantes e tarefas vencidas.

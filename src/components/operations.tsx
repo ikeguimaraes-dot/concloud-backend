@@ -351,7 +351,7 @@ export function Operations({ openLead }: { openLead: (id: string) => void }) {
     </main>
   );
 }
-function ProcessEditor({
+export function ProcessEditor({
   id,
   initialTarget,
   initialError,

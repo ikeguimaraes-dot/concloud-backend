@@ -5,6 +5,8 @@ const id = "10000000-0000-4000-8000-000000000001";
 test("proxy permite só contratos internos previstos", () => {
   assert.ok(allowedRoute("GET", ["leads", id]));
   assert.ok(allowedRoute("GET", ["processes"]));
+  assert.ok(allowedRoute("GET", ["pending"]));
+  assert.equal(allowedRoute("POST", ["pending"]), false);
   assert.ok(allowedRoute("POST", ["processes", id, "transitions"]));
   assert.ok(allowedRoute("POST", ["leads", id, "documents", id, "reviews"]));
   assert.ok(allowedRoute("GET", ["leads", id, "documents", id, "versions"]));

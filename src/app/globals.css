@@ -1257,3 +1257,31 @@ dd {
   height: 6px;
   accent-color: var(--blue, #164bc1);
 }
+
+.pending-list {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0;
+}
+.pending-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.pending-card h2 {
+  font-size: 17px;
+  margin: 0 0 6px;
+}
+.pending-card p {
+  color: var(--muted);
+  font-size: 13px;
+}
+.mobile-navigation {
+  flex-wrap: wrap;
+}

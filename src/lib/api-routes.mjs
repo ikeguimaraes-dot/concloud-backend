@@ -35,7 +35,7 @@ export function allowedRoute(method, path) {
     return true;
   if (method === "GET")
     return (
-      /^(me|staff|leads)$/.test(route) ||
+      /^(me|staff|leads|pending)$/.test(route) ||
       new RegExp(`^leads/${id}(/documents)?$`).test(route)
     );
   if (method === "PATCH")

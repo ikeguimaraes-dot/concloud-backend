@@ -16,6 +16,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { PendingWork } from "./pending";
 import { Operations, CommercialFunnel } from "./operations";
 import { browserAuth } from "@/lib/supabase";
 
@@ -413,6 +414,14 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
             <Users size={19} />
             Funil comercial
           </a>
+          <a
+            href="#pendencias"
+            onClick={() => setView("pendencias")}
+            className={view === "pendencias" ? "active" : ""}
+          >
+            <ClipboardList size={19} />
+            Pendências
+          </a>
         </nav>
         <div className="sidebar-note">
           <div className="note-icon">
@@ -449,7 +458,9 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
                 ? "Cadastros"
                 : view === "funil"
                   ? "Funil comercial"
-                  : "Aberturas"}
+                  : view === "pendencias"
+                    ? "Pendências"
+                    : "Aberturas"}
             </b>
           </span>
           <div>
@@ -470,6 +481,7 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
             ["cadastros", "Cadastros"],
             ["funil", "Funil comercial"],
             ["aberturas", "Aberturas"],
+            ["pendencias", "Pendências"],
           ].map(([key, label]) => (
             <a
               key={key}
@@ -481,7 +493,15 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
             </a>
           ))}
         </nav>
-        {view === "funil" ? (
+        {view === "pendencias" ? (
+          <PendingWork
+            openLead={setSelected}
+            staff={staff}
+            user={me.user}
+            allowed={me.permissions.documents}
+            revision={refresh}
+          />
+        ) : view === "funil" ? (
           <CommercialFunnel openLead={setSelected} />
         ) : view === "aberturas" ? (
           <Operations openLead={setSelected} />
