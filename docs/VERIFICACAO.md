@@ -19,7 +19,7 @@
 | E1-02 | Cadeia completa de migrations com drafts antes/depois da migration de sócios, MEI, vários sócios e submissão final; nenhuma incompatibilidade silenciosa |
 | E1-03 | Simular falha de banco/ausência de função; UI não comunica salvamento que não aconteceu; cadastro final continua compatível |
 | E1-04 | Listar drafts, completos, pagos e não pagos da organização; nenhum filtro padrão exclui incompletos; paginação estável e busca sem vazamento |
-| E1-05 | Cliente, sem vínculo, vínculo inativo, AAL1 e token expirado não acessam endpoints internos; AAL2 com concessão funciona |
+| E1-05 | Cliente, sem vínculo, vínculo inativo e token expirado não acessam endpoints internos; AAL1 e AAL2 com concessão funcionam |
 | E1-06 | Dois funcionários de organizações distintas não acessam IDs, busca, documentos ou atribuições alheios, inclusive com parâmetros forjados |
 | E1-07 | Revogar membership/permissão; próximo request falha mesmo com token ainda válido; negar acesso por user_metadata/headers forjados |
 | E1-08 | Documento existente abre só com permissão; objectKey arbitrário recusado; URL expira; bucket privado; sem URL em cache/log |

@@ -1,6 +1,6 @@
 # ConCloud — painel interno
 
-Painel exclusivo da equipe ConCloud, integrado ao portal e ao banco existente. Entrega 1 implementada: login/MFA, permissões, lista de cadastros parciais e não pagos, ficha, documentos privados, cobrança inicial e atribuição persistida de responsável.
+Painel exclusivo da equipe ConCloud, integrado ao portal e ao banco existente. Entrega 1 implementada: login com e-mail e senha, permissões, lista de cadastros parciais e não pagos, ficha, documentos privados, cobrança inicial e atribuição persistida de responsável.
 
 [Acessar painel publicado](https://concloud-backend.vercel.app).
 

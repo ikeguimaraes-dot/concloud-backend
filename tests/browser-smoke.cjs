@@ -47,6 +47,9 @@ const { mkdir } = require("node:fs/promises");
           errors.length
         )
           throw Error("Login overflow or JavaScript error");
+        await page.screenshot({
+          path: `test-results/login-${viewport.width}.png`,
+        });
         const denied = await page.request.get(
           "http://127.0.0.1:3205/api/internal/me",
         );
@@ -67,7 +70,7 @@ const { mkdir } = require("node:fs/promises");
         leadId = "20000000-0000-4000-8000-000000000001";
       const payload = {
         sub: userId,
-        aal: "aal2",
+        aal: "aal1",
         aud: "authenticated",
         role: "authenticated",
         exp: Math.floor(Date.now() / 1000) + 3600,

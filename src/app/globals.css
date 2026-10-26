@@ -169,10 +169,12 @@ p {
   font-size: 16px;
 }
 .auth-story .brand {
-  background: white;
-  width: 224px;
-  border-radius: 12px;
-  padding: 5px 10px;
+  width: 360px;
+  max-width: 100%;
+}
+.auth-story .brand img {
+  width: 100%;
+  height: auto;
 }
 .auth-footer {
   font-size: 11px;
@@ -228,10 +230,6 @@ p {
 .text-button {
   color: var(--blue);
   padding: 16px 0;
-}
-.qr {
-  text-align: center;
-  margin: 20px 0;
 }
 .shell {
   display: flex;

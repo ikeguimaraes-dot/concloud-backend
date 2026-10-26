@@ -5,7 +5,7 @@ Atualização: 26/10/2026. O usuário autorizou implementação, commits, push e
 ## Implementado
 
 - Next.js 16.4.3, React 19.3.0 e TypeScript; painel exclusivo ConCloud, identidade visual própria, desktop/mobile.
-- Login na identidade Supabase existente, sessão própria do painel, MFA obrigatório e configuração de TOTP. Administrador confirmado vinculado sem alterar senha ou criar nova conta.
+- Login na identidade Supabase existente, sessão própria do painel, login com e-mail e senha, sem segundo fator. Administrador confirmado vinculado sem alterar senha ou criar nova conta.
 - API no portal `/api/internal/v1`; servidor do painel encaminha token do operador, nunca service_role. Proteção CSRF nas mutações e allowlist de rotas.
 - Lista paginada por cursor com nome/e-mail/CPF, plano, situação de cadastro/pagamento e responsável. Contagens da tela explicitamente referentes à página atual.
 - Ficha e sócios captados pelo portal, campos ausentes explícitos, documentos atuais e downloads privados de 60 segundos com auditoria.
@@ -19,7 +19,7 @@ Projeto confirmado: `peuqfdgkxkiaszrvpgmq`; somente domínio `concloud`. A inspe
 
 Lote remoto `concloud_opening_internal_rollout` aplicado com fontes do portal: `20261016120000_opening_partners`, `20261026120000_opening_mei`, `20261026200458_opening_internal_panel`. Administração inicial provisionada pelo SQL idempotente versionado `scripts/sql/bootstrap-opening-admin.sql`.
 
-Verificação pós-migration: 4 cadastros, 12 referências documentais; hashes de IDs/objectKeys iguais antes/depois; nenhum lead sem organização; um administrador ativo. A conta ainda não tinha fator MFA verificado e deverá configurá-lo no primeiro acesso. Nenhum arquivo de cliente foi aberto para essa conferência.
+Verificação pós-migration: 4 cadastros, 12 referências documentais; hashes de IDs/objectKeys iguais antes/depois; nenhum lead sem organização; um administrador ativo. A exigência inicial de MFA foi substituída por login com senha por solicitação do responsável. Nenhum arquivo de cliente foi aberto para essa conferência.
 
 O projeto remoto usa `supabase_migrations.schema_migrations`; a autoridade de código segue `concloud/packages/database/migrations`. Não executar Prisma deploy no remoto antes de formalizar o baseline. Não alterar entradas do outro sistema. Prisma continua aplicável a bases locais novas.
 
@@ -65,3 +65,7 @@ Testes de navegador versionados em `tests/browser-smoke.cjs`: login, bloqueios 4
 - Audit final: zero vulnerabilidades reportadas nos dois projetos após as correções compatíveis.
 - Checkout local do portal atualizado por fast-forward, preservando `docs/backend/` não versionado; dependências sincronizadas com npm ci.
 - Consulta de logs dos dois deployments, nível error, janela de 10 minutos: nenhum evento retornado. É uma observação inicial, não uma homologação de uso autenticado.
+
+## Ajuste solicitado em 26/10/2026
+
+Login interno apenas com e-mail e senha, sem configuração ou desafio de segundo fator. Esta decisão substitui a exigência de MFA do manual de referência. API e RLS aceitam AAL1 e AAL2, mantendo vínculo ativo e concessões. Migration aditiva `20261026203402_opening_password_login` no portal. Logo transparente reutilizado do portal, ampliado para 360px no login e responsivo. Smoke de navegador usa sessão sintética AAL1; a suite RLS valida leitura, atribuição, documentos e revogação com AAL1.

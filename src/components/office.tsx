@@ -128,10 +128,10 @@ function Brand() {
   return (
     <div className="brand">
       <img
-        src="/concloud.png"
+        src="/concloud-brand.png"
         alt="ConCloud — contabilidade em nuvem"
         width="204"
-        height="75"
+        height="68"
       />
     </div>
   );
@@ -148,15 +148,12 @@ function Payment({ lead }: { lead: Lead }) {
   );
 }
 export function Office() {
-  const [mode, setMode] = useState<
-    "loading" | "login" | "mfa" | "office" | "denied"
-  >("loading");
+  const [mode, setMode] = useState<"loading" | "login" | "office" | "denied">(
+    "loading",
+  );
   const [me, setMe] = useState<Me | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
-  const [factor, setFactor] = useState(""),
-    [qr, setQr] = useState(""),
-    [code, setCode] = useState("");
   async function initialize() {
     try {
       const auth = browserAuth();
@@ -165,16 +162,6 @@ export function Office() {
       } = await auth.auth.getUser();
       if (!user) {
         setMode("login");
-        return;
-      }
-      const { data: assurance, error: assuranceError } =
-        await auth.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (assuranceError) throw assuranceError;
-      if (assurance?.currentLevel !== "aal2") {
-        const { data, error } = await auth.auth.mfa.listFactors();
-        if (error) throw error;
-        setFactor(data.totp.find((f) => f.status === "verified")?.id ?? "");
-        setMode("mfa");
         return;
       }
       const identity = await api<Me>("me");
@@ -207,63 +194,10 @@ export function Office() {
       setBusy(false);
     }
   }
-  async function enroll() {
-    setBusy(true);
-    setError("");
-    try {
-      const auth = browserAuth();
-      const factors = await auth.auth.mfa.listFactors();
-      if (factors.error) throw factors.error;
-      // Remove only unfinished TOTP enrollments before replacing a setup QR code.
-      for (const f of factors.data.all.filter(
-        (f) =>
-          f.factor_type === "totp" &&
-          f.status === "unverified" &&
-          f.friendly_name === "Painel ConCloud",
-      )) {
-        const result = await auth.auth.mfa.unenroll({ factorId: f.id });
-        if (result.error) throw result.error;
-      }
-      const { data, error } = await auth.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: "Painel ConCloud",
-      });
-      if (error) throw error;
-      setFactor(data.id);
-      setQr(data.totp.qr_code);
-    } catch {
-      setError("Não foi possível configurar a autenticação. Tente novamente.");
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function verify(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      const { error } = await browserAuth().auth.mfa.challengeAndVerify({
-        factorId: factor,
-        code,
-      });
-      if (error) throw error;
-      setQr("");
-      setCode("");
-      await initialize();
-    } catch {
-      setError(
-        "Código inválido ou expirado. Confira seu aplicativo autenticador.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
   async function logout() {
     await browserAuth().auth.signOut({ scope: "local" });
     setMe(null);
     setError("");
-    setFactor("");
-    setQr("");
     setMode("login");
   }
   if (mode === "office" && me) return <Dashboard me={me} logout={logout} />;
@@ -295,19 +229,13 @@ export function Office() {
           </div>
           <span className="eyebrow">PAINEL INTERNO</span>
           <h2>
-            {mode === "mfa"
-              ? "Confirme seu acesso"
-              : mode === "denied"
-                ? "Acesso à equipe"
-                : mode === "loading"
-                  ? "Preparando seu acesso"
-                  : "Bem-vindo de volta"}
+            {mode === "denied"
+              ? "Acesso à equipe"
+              : mode === "loading"
+                ? "Preparando seu acesso"
+                : "Bem-vindo de volta"}
           </h2>
-          <p className="muted">
-            {mode === "mfa"
-              ? "Use seu aplicativo autenticador para continuar com segurança."
-              : "Entre com sua conta da equipe ConCloud."}
-          </p>
+          <p className="muted">Entre com sua conta da equipe ConCloud.</p>
           {error && (
             <div className="notice error" role="alert">
               {error}
@@ -346,60 +274,12 @@ export function Office() {
               </p>
             </form>
           )}
-          {mode === "mfa" && (
-            <>
-              {qr && (
-                <div className="qr">
-                  <img
-                    src={qr}
-                    width="200"
-                    height="200"
-                    alt="QR Code para configurar o autenticador"
-                  />
-                  <p className="fine">
-                    Escaneie no seu aplicativo autenticador.
-                  </p>
-                </div>
-              )}
-              {!factor ? (
-                <button
-                  className="primary wide"
-                  onClick={enroll}
-                  disabled={busy}
-                >
-                  Configurar autenticação em duas etapas
-                </button>
-              ) : (
-                <form onSubmit={verify}>
-                  <label>
-                    Código de 6 dígitos
-                    <input
-                      value={code}
-                      onChange={(e) =>
-                        setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      pattern="[0-9]{6}"
-                      required
-                    />
-                  </label>
-                  <button
-                    className="primary wide"
-                    disabled={busy || code.length !== 6}
-                  >
-                    {busy ? "Verificando…" : "Confirmar acesso"}
-                  </button>
-                </form>
-              )}
-            </>
-          )}
           {mode === "denied" && (
             <button className="primary wide" onClick={initialize}>
               Tentar novamente
             </button>
           )}
-          {(mode === "mfa" || mode === "denied") && (
+          {mode === "denied" && (
             <button className="text-button" onClick={logout}>
               Sair desta conta
             </button>
