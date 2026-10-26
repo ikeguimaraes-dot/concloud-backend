@@ -172,7 +172,13 @@ const { mkdir } = require("node:fs/promises");
           let data;
           if (path === "processes")
             data = {
-              items: [processRow()],
+              items:
+                (!url.searchParams.get("workflow") ||
+                  url.searchParams.get("workflow") === "JUCESP") &&
+                (!url.searchParams.get("search") ||
+                  "Processo sintético".includes(url.searchParams.get("search")))
+                  ? [processRow()]
+                  : [],
               nextOffset: null,
               workflows: { JUCESP: stages, MEI: stages.slice(0, 7) },
             };
@@ -306,9 +312,38 @@ const { mkdir } = require("node:fs/promises");
         await page
           .getByRole("link", { name: "Aberturas", exact: true })
           .click();
+        await page.getByLabel("Fluxo", { exact: true }).selectOption("");
         await page
           .getByRole("button", { name: "Abrir processo", exact: true })
-          .click();
+          .waitFor();
+        await page.getByLabel("Buscar cliente").fill("ausente");
+        await page
+          .getByText("Nenhum cliente encontrado neste filtro.")
+          .waitFor();
+        await page.getByLabel("Buscar cliente").fill("Processo sintético");
+        await page
+          .getByRole("button", {
+            name: "Processo sintético · Pequenas empresas · SP/JUCESP · Etapa sintética 1",
+            exact: true,
+          })
+          .waitFor();
+        const board = page.getByLabel("Quadro operacional JUCESP", {
+          exact: true,
+        });
+        if (viewport.width > 760) {
+          await board
+            .locator(".process-card")
+            .dragTo(board.locator(".kanban-column").nth(1));
+          await page
+            .getByRole("alert")
+            .filter({ hasText: "Documento sintético pendente" })
+            .waitFor();
+          if (processStage !== 1) throw Error("Blocked drag changed stage");
+        } else {
+          await page
+            .getByRole("button", { name: "Abrir processo", exact: true })
+            .click();
+        }
         const dialog = page.getByRole("dialog", {
           name: "Processo de abertura",
         });
@@ -318,16 +353,49 @@ const { mkdir } = require("node:fs/promises");
           .getByLabel("Registro da etapa / motivo / próxima ação")
           .fill("Conferência sintética concluída");
         await dialog.getByRole("button", { name: "Salvar transição" }).click();
-        await dialog
-          .getByRole("alert")
-          .filter({ hasText: "Documento sintético pendente" })
-          .waitFor();
-        if (processStage !== 1) throw Error("Blocked transition changed stage");
-        await dialog.getByRole("button", { name: "Salvar transição" }).click();
+        if (viewport.width <= 760) {
+          await dialog
+            .getByRole("alert")
+            .filter({ hasText: "Documento sintético pendente" })
+            .waitFor();
+          if (processStage !== 1)
+            throw Error("Blocked mobile transition changed stage");
+          await dialog
+            .getByRole("button", { name: "Salvar transição" })
+            .click();
+        }
+
         await dialog
           .getByRole("heading", { name: "2. Etapa sintética 2", exact: true })
           .waitFor();
         await dialog.getByRole("button", { name: "Fechar processo" }).click();
+        if (viewport.width > 760) {
+          await board
+            .locator(".kanban-column")
+            .nth(1)
+            .locator(".process-card")
+            .waitFor();
+          await board
+            .locator(".process-card")
+            .dragTo(board.locator(".kanban-column").nth(2));
+          await page
+            .getByText("Etapa atualizada e salva.", { exact: true })
+            .waitFor();
+          await board
+            .locator(".kanban-column")
+            .nth(2)
+            .locator(".process-card")
+            .waitFor();
+          if (processStage !== 3) throw Error("Drag did not persist stage");
+          await page
+            .getByRole("button", { name: "Atualizar", exact: true })
+            .click();
+          await board
+            .locator(".kanban-column")
+            .nth(2)
+            .locator(".process-card")
+            .waitFor();
+        }
         if (
           await page.evaluate(
             () => document.documentElement.scrollWidth > innerWidth,

@@ -69,3 +69,11 @@ Testes de navegador versionados em `tests/browser-smoke.cjs`: login, bloqueios 4
 ## Ajuste solicitado em 26/10/2026
 
 Login interno apenas com e-mail e senha, sem configuração ou desafio de segundo fator. Esta decisão substitui a exigência de MFA do manual de referência. API e RLS aceitam AAL1 e AAL2, mantendo vínculo ativo e concessões. Migration aditiva `20261026203402_opening_password_login` no portal. Logo transparente reutilizado do portal, ampliado para 360px no login e responsivo. Smoke de navegador usa sessão sintética AAL1; a suite RLS valida leitura, atribuição, documentos e revogação com AAL1.
+
+## 26/10/2026 — pagamento automático, busca e Kanban
+
+Portal compartilhado publicado em `87a67ba` (Vercel READY). Migration canônica `20261026212320_opening_automatic_dispatch` aplicada no Supabase compartilhado somente em `concloud`; criação de três processos em Recepção e triagem a partir de pagamentos TEST_BYPASS, com origem de teste explícita. Quatro cadastros e doze documentos preservados. O cadastro PENDING não entrou no quadro. Nenhuma mensagem foi disparada na implantação.
+
+Painel: Todos os fluxos como padrão, busca de cliente no servidor com etapa atual, arrastar com persistência validada e alternativa por botão no celular. Atualização de quadro/funil a cada 15 segundos enquanto visíveis. Checklist salvo só pode ser reaproveitado na mesma versão; requisitos pendentes abrem o diálogo sem mover o card. Plano/UF sem rota suportada permanece em triagem de rota a definir.
+
+Validação: 49 testes no portal aprovados (13 dependentes de PostgreSQL nativo ignorados; PGlite executado), teste do proxy, builds/TypeScript dos dois projetos, lint do portal e smoke de navegador desktop/celular. Testes usam dados sintéticos locais, sem documentos reais. Advisors mantêm somente os seis avisos legados de search_path.

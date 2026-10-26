@@ -476,10 +476,7 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
         {view === "funil" ? (
           <CommercialFunnel openLead={setSelected} />
         ) : view === "aberturas" ? (
-          <Operations
-            openLead={setSelected}
-            canCreate={me.permissions.assign && me.permissions.documents}
-          />
+          <Operations openLead={setSelected} />
         ) : (
           <main id="cadastros" className="content">
             <div className="page-heading">

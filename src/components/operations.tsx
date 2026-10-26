@@ -11,6 +11,7 @@ type Process = {
   version: number;
   ownerId: string | null;
   ownerName?: string;
+  testPayment?: boolean;
 };
 type Task = {
   id: string;
@@ -52,40 +53,48 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(data.error?.message ?? "Não foi possível concluir.");
   return data;
 }
-export function Operations({
-  openLead,
-  canCreate,
-}: {
-  openLead: (id: string) => void;
-  canCreate: boolean;
-}) {
-  const [rows, setRows] = useState<Process[]>([]),
-    [workflows, setWorkflows] = useState<Record<string, [string, string][]>>(
-      {},
-    ),
-    [workflow, setWorkflow] = useState("JUCESP"),
-    [offset, setOffset] = useState(0),
-    [next, setNext] = useState<number | null>(null),
-    [error, setError] = useState(""),
-    [loading, setLoading] = useState(true),
-    [selected, setSelected] = useState<{ id: string; target?: number } | null>(
-      null,
-    ),
-    [refresh, setRefresh] = useState(0),
-    [paid, setPaid] = useState<{ id: string; name: string; plan: string }[]>(
-      [],
-    ),
-    [leadId, setLeadId] = useState(""),
-    [busy, setBusy] = useState(false);
+const workflowNames: Record<string, string> = {
+  JUCESP: "Pequenas empresas · SP/JUCESP",
+  MEI: "MEI",
+  TRIAGE: "Rota a definir",
+};
+export function Operations({ openLead }: { openLead: (id: string) => void }) {
+  const [rows, setRows] = useState<Process[]>([]);
+  const [workflows, setWorkflows] = useState<
+    Record<string, [string, string][]>
+  >({});
+  const [workflow, setWorkflow] = useState("");
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [next, setNext] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [selected, setSelected] = useState<{
+    id: string;
+    target?: number;
+    error?: string;
+  } | null>(null);
+  const [refresh, setRefresh] = useState(0);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(search.trim());
+      setOffset(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
   useEffect(() => {
     let active = true;
     setLoading(true);
-    setError("");
     api<{
       items: Process[];
       nextOffset: number | null;
       workflows: Record<string, [string, string][]>;
-    }>(`processes?workflow=${workflow}&offset=${offset}`)
+    }>(
+      `processes?${new URLSearchParams({ workflow, search: query, offset: String(offset) })}`,
+    )
       .then((d) => {
         if (active) {
           setRows(d.items);
@@ -102,28 +111,38 @@ export function Operations({
     return () => {
       active = false;
     };
-  }, [workflow, offset, refresh]);
+  }, [workflow, query, offset, refresh]);
   useEffect(() => {
-    if (canCreate)
-      api<{ items: { id: string; name: string; plan: string }[] }>(
-        "leads?paymentStatus=PAID&limit=100",
-      )
-        .then((d) => setPaid(d.items))
-        .catch((e) => setError(e.message));
-  }, [canCreate, refresh]);
-  async function create(e: FormEvent) {
-    e.preventDefault();
+    const timer = setInterval(() => {
+      if (!document.hidden && !busy && !selected) setRefresh((v) => v + 1);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [busy, selected]);
+  async function move(id: string, flow: string, target: number) {
+    const p = rows.find((row) => row.id === id);
+    if (!p || busy || p.stage === target) return;
+    if (p.workflow !== flow) {
+      setError("Mova o card dentro do fluxo correspondente ao cliente.");
+      return;
+    }
     setBusy(true);
     setError("");
+    setNotice("");
     try {
-      const p = await api<Process>("processes", {
+      await api(`processes/${id}/transitions`, {
         method: "POST",
-        body: JSON.stringify({ leadId, workflow }),
+        body: JSON.stringify({
+          mode: "drag",
+          targetStage: target,
+          expectedVersion: p.version,
+          situation: "IN_PROGRESS",
+          reason: "Movimentação pelo quadro operacional",
+        }),
       });
-      setSelected({ id: p.id });
+      setNotice("Etapa atualizada e salva.");
       setRefresh((v) => v + 1);
     } catch (e) {
-      setError((e as Error).message);
+      setSelected({ id, target, error: (e as Error).message });
     } finally {
       setBusy(false);
     }
@@ -134,7 +153,9 @@ export function Operations({
         <div>
           <span className="eyebrow">OPERAÇÃO</span>
           <h1>Aberturas</h1>
-          <p>Etapas, documentos, tarefas e histórico do processo.</p>
+          <p>
+            Pagamento confirmado entra automaticamente em Recepção e triagem.
+          </p>
         </div>
         <button
           className="page-button"
@@ -147,115 +168,156 @@ export function Operations({
         <label>
           Fluxo
           <select
+            aria-label="Fluxo"
             value={workflow}
             onChange={(e) => {
               setWorkflow(e.target.value);
               setOffset(0);
             }}
           >
-            <option value="JUCESP">Pequenas empresas · SP/JUCESP</option>
-            <option value="MEI">MEI</option>
+            <option value="">Todos os fluxos</option>
+            {Object.entries(workflowNames).map(([key, name]) => (
+              <option key={key} value={key}>
+                {name}
+              </option>
+            ))}
           </select>
         </label>
+        <label>
+          Buscar cliente
+          <input
+            type="search"
+            maxLength={120}
+            value={search}
+            placeholder="Nome, e-mail, CPF ou processo"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
       </div>
-      {canCreate && (
-        <form className="operation-create" onSubmit={create}>
-          <label>
-            Encaminhar cadastro pago (até 100 recentes)
-            <select
-              required
-              value={leadId}
-              onChange={(e) => setLeadId(e.target.value)}
-            >
-              <option value="">Selecione um cadastro</option>
-              {paid
-                .filter((l) => (l.plan === "mei") === (workflow === "MEI"))
-                .map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <button className="primary" disabled={busy || !leadId}>
-            Encaminhar à operação
-          </button>
-          <p className="fine">
-            Exige cadastro concluído e responsável atribuído. A rota é
-            confirmada pela equipe.
-          </p>
-        </form>
-      )}
       {error && (
         <p role="alert" className="notice error">
           {error}
         </p>
+      )}
+      {(notice || busy) && (
+        <p role="status">{busy ? "Salvando mudança de etapa…" : notice}</p>
       )}
       {loading ? (
         <p role="status">Carregando processos…</p>
       ) : (
         <>
           <p className="fine">
-            {rows.length} processos nesta página. Arraste para solicitar mudança
-            ou use “Abrir processo”. A mudança só ocorre após confirmação e
-            validação.
+            {rows.length} processos nesta página. Arraste o card ou use “Abrir
+            processo”. Se faltar uma conferência, documento ou protocolo,
+            complete os requisitos para salvar a mudança.
           </p>
-          <div className="kanban" aria-label="Quadro operacional">
-            {(workflows[workflow] ?? []).map(([title], i) => (
-              <section
-                className="kanban-column"
-                key={title}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const id = e.dataTransfer.getData("text/plain");
-                  if (rows.some((p) => p.id === id))
-                    setSelected({ id, target: i + 1 });
-                }}
-              >
-                <h2>
-                  <span>{i + 1}</span>
-                  {title}
-                </h2>
-                {rows
-                  .filter((p) => p.stage === i + 1)
-                  .map((p) => (
-                    <article
-                      className="process-card"
-                      key={p.id}
-                      draggable={!["DONE", "CANCELED"].includes(p.situation)}
-                      onDragStart={(e) =>
-                        e.dataTransfer.setData("text/plain", p.id)
-                      }
+          {query && (
+            <div aria-label="Resultados da busca">
+              {rows.length ? (
+                rows.map((p) => (
+                  <p key={p.id}>
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        document
+                          .getElementById(`process-${p.id}`)
+                          ?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "nearest",
+                            inline: "center",
+                          });
+                      }}
                     >
-                      <strong>{p.name}</strong>
-                      <small>
-                        Processo {p.id.slice(0, 8)} · {p.plan}
-                      </small>
-                      <small>
-                        Responsável: {p.ownerName ?? "Não informado"}
-                      </small>
-                      <span className="badge">{situations[p.situation]}</span>
-                      <button
-                        className="text-button"
-                        onClick={() => setSelected({ id: p.id })}
-                      >
-                        Abrir processo
-                      </button>
-                      <button
-                        className="text-button"
-                        onClick={() => openLead(p.leadId)}
-                      >
-                        Ficha e documentos
-                      </button>
-                    </article>
+                      {p.name} · {workflowNames[p.workflow]} ·{" "}
+                      {workflows[p.workflow]?.[p.stage - 1]?.[0]}
+                    </button>
+                  </p>
+                ))
+              ) : (
+                <p>Nenhum cliente encontrado neste filtro.</p>
+              )}
+            </div>
+          )}
+          {Object.entries(workflows)
+            .filter(([key]) => !workflow || workflow === key)
+            .map(([flow, stages]) => (
+              <section key={flow} aria-label={workflowNames[flow]}>
+                <h2>{workflowNames[flow]}</h2>
+                <div
+                  className="kanban"
+                  aria-label={`Quadro operacional ${flow}`}
+                >
+                  {stages.map(([title], i) => (
+                    <section
+                      className="kanban-column"
+                      key={title}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        void move(
+                          e.dataTransfer.getData("text/plain"),
+                          flow,
+                          i + 1,
+                        );
+                      }}
+                    >
+                      <h2>
+                        <span>{i + 1}</span>
+                        {title}
+                      </h2>
+                      {rows
+                        .filter((p) => p.workflow === flow && p.stage === i + 1)
+                        .map((p) => (
+                          <article
+                            className="process-card"
+                            key={p.id}
+                            id={`process-${p.id}`}
+                            draggable={
+                              !busy &&
+                              !["DONE", "CANCELED"].includes(p.situation)
+                            }
+                            onDragStart={(e) => {
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("text/plain", p.id);
+                            }}
+                          >
+                            <strong>{p.name || "Cadastro incompleto"}</strong>
+                            <small>
+                              Processo {p.id.slice(0, 8)} · {p.plan}
+                            </small>
+                            <small>
+                              Responsável: {p.ownerName ?? "Não atribuído"}
+                            </small>
+                            {p.testPayment && (
+                              <span className="badge">Pagamento de teste</span>
+                            )}
+                            <span className="badge">
+                              {situations[p.situation]}
+                            </span>
+                            <button
+                              className="text-button"
+                              onClick={() => setSelected({ id: p.id })}
+                            >
+                              Abrir processo
+                            </button>
+                            <button
+                              className="text-button"
+                              onClick={() => openLead(p.leadId)}
+                            >
+                              Ficha e documentos
+                            </button>
+                          </article>
+                        ))}
+                      {!rows.some(
+                        (p) => p.workflow === flow && p.stage === i + 1,
+                      ) && (
+                        <p className="fine">Nenhum processo nesta página.</p>
+                      )}
+                    </section>
                   ))}
-                {!rows.some((p) => p.stage === i + 1) && (
-                  <p className="fine">Nenhum processo nesta página.</p>
-                )}
+                </div>
               </section>
             ))}
-          </div>
           <div className="review-actions">
             <button
               disabled={offset === 0}
@@ -274,11 +336,15 @@ export function Operations({
           key={`${selected.id}-${selected.target}`}
           id={selected.id}
           initialTarget={selected.target}
+          initialError={selected.error}
           close={() => setSelected(null)}
-          changed={() => setRefresh((v) => v + 1)}
-          openLead={(leadId) => {
+          changed={() => {
+            setError("");
+            setRefresh((v) => v + 1);
+          }}
+          openLead={(id) => {
             setSelected(null);
-            openLead(leadId);
+            openLead(id);
           }}
         />
       )}
@@ -288,12 +354,14 @@ export function Operations({
 function ProcessEditor({
   id,
   initialTarget,
+  initialError,
   close,
   changed,
   openLead,
 }: {
   id: string;
   initialTarget?: number;
+  initialError?: string;
   close: () => void;
   changed: () => void;
   openLead: (id: string) => void;
@@ -305,7 +373,7 @@ function ProcessEditor({
     [checked, setChecked] = useState(false),
     [protocol, setProtocol] = useState(""),
     [cnpj, setCnpj] = useState(""),
-    [error, setError] = useState(""),
+    [error, setError] = useState(initialError ?? ""),
     [busy, setBusy] = useState(false),
     [task, setTask] = useState(""),
     [due, setDue] = useState(""),
@@ -632,11 +700,17 @@ export function CommercialFunnel({
     STARTED: "Cadastro iniciado",
     REGISTERED: "Cadastro concluído",
     WAITING_PAYMENT: "Aguardando pagamento",
-    PAID: "Pagamento confirmado",
+    PAID: "Pagamento confirmado · sincronização pendente",
     OPERATION: "Encaminhado à operação",
   };
   const [items, setItems] = useState<
-      { id: string; name: string; commercialStage: string; plan: string }[]
+      {
+        id: string;
+        name: string;
+        commercialStage: string;
+        plan: string;
+        testPayment?: boolean;
+      }[]
     >([]),
     [cursor, setCursor] = useState<string | null>(null),
     [next, setNext] = useState<string | null>(null),
@@ -667,6 +741,12 @@ export function CommercialFunnel({
       active = false;
     };
   }, [cursor, refresh]);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!document.hidden) setRefresh((v) => v + 1);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
   return (
     <main className="content">
       <div className="page-heading">
@@ -696,7 +776,7 @@ export function CommercialFunnel({
         <>
           <p className="fine">
             {items.length} cadastros nesta página. O pagamento é confirmado pela
-            integração financeira; o encaminhamento é feito em Aberturas.
+            integração financeira e encaminha automaticamente à operação.
           </p>
           <div className="kanban">
             {Object.entries(columns).map(([key, label]) => (
@@ -708,6 +788,9 @@ export function CommercialFunnel({
                     <article className="process-card" key={l.id}>
                       <strong>{l.name || "Cadastro incompleto"}</strong>
                       <small>{l.plan || "Plano ainda não escolhido"}</small>
+                      {l.testPayment && (
+                        <span className="badge">Pagamento de teste</span>
+                      )}
                       <button
                         className="text-button"
                         onClick={() => openLead(l.id)}
