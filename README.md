@@ -2,6 +2,8 @@
 
 Painel exclusivo da equipe ConCloud, integrado ao portal e ao banco existente. Entrega 1 implementada: login/MFA, permissões, lista de cadastros parciais e não pagos, ficha, documentos privados, cobrança inicial e atribuição persistida de responsável.
 
+[Acessar painel publicado](https://concloud-backend.vercel.app).
+
 Administrador inicial: `grupomeeteat@gmail.com`, vinculado no banco. Use a senha já existente dessa conta e configure o autenticador no primeiro acesso. Nenhuma senha foi criada ou alterada.
 
 ## Executar
@@ -19,6 +21,8 @@ Painel local: `http://localhost:3200`. Não usa credencial PostgreSQL, service_r
 npm run typecheck
 npm test
 npm run build
+npx playwright install chromium
+npm run test:browser
 ```
 
 ## Documentação

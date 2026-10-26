@@ -4,7 +4,7 @@ Atualização: 26/10/2026. O usuário autorizou implementação, commits, push e
 
 ## Implementado
 
-- Next.js 16.3.8, React 19.3.0 e TypeScript; painel exclusivo ConCloud, identidade visual própria, desktop/mobile.
+- Next.js 16.4.3, React 19.3.0 e TypeScript; painel exclusivo ConCloud, identidade visual própria, desktop/mobile.
 - Login na identidade Supabase existente, sessão própria do painel, MFA obrigatório e configuração de TOTP. Administrador confirmado vinculado sem alterar senha ou criar nova conta.
 - API no portal `/api/internal/v1`; servidor do painel encaminha token do operador, nunca service_role. Proteção CSRF nas mutações e allowlist de rotas.
 - Lista paginada por cursor com nome/e-mail/CPF, plano, situação de cadastro/pagamento e responsável. Contagens da tela explicitamente referentes à página atual.
@@ -45,3 +45,13 @@ Kanban/16 etapas e MEI separado, revisões documentais por versão, tarefas, SLA
 Preservar índice único CPF até revisar a retomada/deduplicação. Corrigir idempotência/ordenação/efeitos do webhook antes de automatizar criação de processos. O rollout não dispara mensagens por conta própria; o portal mantém suas rotinas já existentes.
 
 Rollback: reimplantar a versão anterior da aplicação preservando o schema aditivo e os arquivos. Não executar DROP/reset nem apagar histórico. Consulte a documentação do portal para a compatibilidade das funções legadas.
+
+## Correção de dependência detectada no build
+
+O audit apontou advisories críticos na versão Next herdada. Ambos os projetos foram atualizados para Next 16.4.3, versão corretiva oficial: https://github.com/vercel/next.js/releases/tag/v16.4.3. Referência do alerta: https://github.com/vercel/next.js/security/advisories/GHSA-2464-fhr4-w9xw.
+
+## Endereços publicados
+
+Painel: https://concloud-backend.vercel.app · Portal/API: https://concloud.vercel.app. Primeiros deploys confirmados READY; correções finais seguem os commits de cada repositório.
+
+Testes de navegador versionados em `tests/browser-smoke.cjs`: login, bloqueios 401/403, listagem, ficha, atribuição, documentos vazios, valor ausente e Escape em desktop/mobile, com fixtures sintéticas interceptadas apenas no navegador local. Executar após o build com `npm run test:browser` (Chromium instalado pelo Playwright). Esses testes não gravam dados reais.

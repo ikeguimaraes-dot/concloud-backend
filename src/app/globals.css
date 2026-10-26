@@ -369,6 +369,7 @@ p {
   flex-shrink: 0;
 }
 .main-area {
+  min-width: 0;
   margin-left: 247px;
   width: calc(100% - 247px);
 }
@@ -548,6 +549,7 @@ p {
   font-weight: 600;
 }
 .table-scroll {
+  position: relative;
   overflow: auto;
 }
 table {
