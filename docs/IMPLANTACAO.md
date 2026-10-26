@@ -55,3 +55,13 @@ O audit apontou advisories críticos na versão Next herdada. Ambos os projetos 
 Painel: https://concloud-backend.vercel.app · Portal/API: https://concloud.vercel.app. Primeiros deploys confirmados READY; correções finais seguem os commits de cada repositório.
 
 Testes de navegador versionados em `tests/browser-smoke.cjs`: login, bloqueios 401/403, listagem, ficha, atribuição, documentos vazios, valor ausente e Escape em desktop/mobile, com fixtures sintéticas interceptadas apenas no navegador local. Executar após o build com `npm run test:browser` (Chromium instalado pelo Playwright). Esses testes não gravam dados reais.
+
+## Resultado verificado em produção
+
+- Portal: commit `da8c6b5a3e98378ea705604d968e5cf1a9c98d7d`, deployment `dpl_12kYhxmeWtvc1AXT9tWWebZHN5Rj`, READY.
+- Painel: commit de aplicação `8b775eaa1ba767399d0ae56b2b6b1da24b8dab0c`, deployment `dpl_5Lr57y15k2r2Bd1N9EoUhYWoyAs6`, READY.
+- URL pública do painel respondeu HTTP 200; login renderizado em 1440px e 390px, sem erro JavaScript ou overflow. API do painel recusou sessão ausente com 401. API do portal também respondeu 401 e Cache-Control privado/no-store.
+- Testes locais de navegador passaram em desktop/mobile para login, ficha, atribuição, documentos vazios, pagamento sem valor e navegação por teclado, com fixtures sintéticas. Nenhuma dessas fixtures integra a aplicação publicada.
+- Audit final: zero vulnerabilidades reportadas nos dois projetos após as correções compatíveis.
+- Checkout local do portal atualizado por fast-forward, preservando `docs/backend/` não versionado; dependências sincronizadas com npm ci.
+- Consulta de logs dos dois deployments, nível error, janela de 10 minutos: nenhum evento retornado. É uma observação inicial, não uma homologação de uso autenticado.
