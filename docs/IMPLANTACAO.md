@@ -77,3 +77,7 @@ Portal compartilhado publicado em `87a67ba` (Vercel READY). Migration canônica 
 Painel: Todos os fluxos como padrão, busca de cliente no servidor com etapa atual, arrastar com persistência validada e alternativa por botão no celular. Atualização de quadro/funil a cada 15 segundos enquanto visíveis. Checklist salvo só pode ser reaproveitado na mesma versão; requisitos pendentes abrem o diálogo sem mover o card. Plano/UF sem rota suportada permanece em triagem de rota a definir.
 
 Validação: 49 testes no portal aprovados (13 dependentes de PostgreSQL nativo ignorados; PGlite executado), teste do proxy, builds/TypeScript dos dois projetos, lint do portal e smoke de navegador desktop/celular. Testes usam dados sintéticos locais, sem documentos reais. Advisors mantêm somente os seis avisos legados de search_path.
+
+## 26/10/2026 — favicon
+
+Painel reutiliza o ícone transparente oficial já presente no portal (`concloud-icon-2026.png`), declarado como icon, shortcut e apple-touch-icon. Build aprovado e tags conferidas no HTML gerado.
