@@ -157,6 +157,12 @@ const { mkdir } = require("node:fs/promises");
           funnelStep: 2,
           lastActivityAt: "2026-10-26T12:00:00Z",
           createdAt: "2026-10-26T12:00:00Z",
+          documentProgress: {
+            status: "available",
+            required: 5,
+            uploaded: 3,
+            missing: 2,
+          },
           paymentStatus: "PENDING",
           paymentAmount: null,
           paidAt: null,
@@ -245,6 +251,8 @@ const { mkdir } = require("node:fs/promises");
           });
         });
         await page.goto("http://127.0.0.1:3205");
+        await page.getByText("3 de 5 enviados", { exact: true }).waitFor();
+        await page.getByText("Faltam 2", { exact: true }).waitFor();
         await page
           .getByRole("heading", { name: "Todos os cadastros" })
           .waitFor({ timeout: 5000 });

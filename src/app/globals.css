@@ -1242,3 +1242,18 @@ dd {
     width: 100%;
   }
 }
+
+.document-progress {
+  min-width: 130px;
+  display: grid;
+  gap: 5px;
+}
+.document-progress strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.document-progress progress {
+  width: 130px;
+  height: 6px;
+  accent-color: var(--blue, #164bc1);
+}

@@ -51,6 +51,14 @@ type Lead = {
   state?: string;
   addressType?: string;
   partners?: { name: string; cpf: string; percentage: number }[];
+  documentProgress?:
+    | {
+        status: "available";
+        required: number;
+        uploaded: number;
+        missing: number;
+      }
+    | { status: "pending_details" | "restricted" };
   documentsSubmittedAt?: string | null;
   pagbankPaymentId?: string;
   pagbankSubscriptionId?: string;
@@ -648,6 +656,9 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
                         <th>CLIENTE / CONTATO</th>
                         <th>PLANO</th>
                         <th>CADASTRO</th>
+                        <th title="Arquivos enviados para os dados atuais; aprovação é conferida na ficha.">
+                          DOCUMENTOS
+                        </th>
                         <th>PAGAMENTO INICIAL</th>
                         <th>RESPONSÁVEL</th>
                         <th>ÚLTIMA ATIVIDADE</th>
@@ -687,6 +698,38 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
                             <small className="cell-note">
                               Formulário · etapa {row.funnelStep}
                             </small>
+                          </td>
+                          <td>
+                            {row.documentProgress?.status === "available" ? (
+                              <div
+                                className="document-progress"
+                                aria-label={`Documentos de ${row.name}`}
+                              >
+                                <strong>
+                                  {row.documentProgress.uploaded} de{" "}
+                                  {row.documentProgress.required} enviados
+                                </strong>
+                                <progress
+                                  aria-label={`Documentos enviados de ${row.name}`}
+                                  value={row.documentProgress.uploaded}
+                                  max={row.documentProgress.required}
+                                />
+                                <small className="cell-note">
+                                  {row.documentProgress.missing
+                                    ? `Faltam ${row.documentProgress.missing}`
+                                    : "Todos enviados"}
+                                </small>
+                              </div>
+                            ) : (
+                              <small className="muted">
+                                {row.documentProgress?.status === "restricted"
+                                  ? "Sem acesso aos documentos"
+                                  : row.documentProgress?.status ===
+                                      "pending_details"
+                                    ? "Aguardando plano e sócios"
+                                    : "Contagem indisponível"}
+                              </small>
+                            )}
                           </td>
                           <td>
                             <Payment lead={row} />
