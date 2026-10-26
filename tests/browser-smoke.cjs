@@ -125,6 +125,25 @@ const { mkdir } = require("node:fs/promises");
             body: JSON.stringify(user),
           }),
         );
+        const processId = "30000000-0000-4000-8000-000000000001";
+        const stages = Array.from({ length: 16 }, (_, i) => [
+          `Etapa sintética ${i + 1}`,
+          "Checklist sintético",
+        ]);
+        let processStage = 1,
+          processVersion = 1,
+          blockTransition = true;
+        const processRow = () => ({
+          id: processId,
+          leadId,
+          name: "Processo sintético",
+          plan: "essencial",
+          workflow: "JUCESP",
+          stage: processStage,
+          situation: "IN_PROGRESS",
+          version: processVersion,
+          ownerId: userId,
+        });
         let version = 1,
           ownerId = null;
         const lead = () => ({
@@ -134,6 +153,7 @@ const { mkdir } = require("node:fs/promises");
           phone: "000000000",
           plan: "mei",
           status: "DRAFT",
+          commercialStage: "STARTED",
           funnelStep: 2,
           lastActivityAt: "2026-10-26T12:00:00Z",
           createdAt: "2026-10-26T12:00:00Z",
@@ -150,7 +170,40 @@ const { mkdir } = require("node:fs/promises");
           const url = new URL(route.request().url());
           const path = url.pathname.replace("/api/internal/", "");
           let data;
-          if (path === "me")
+          if (path === "processes")
+            data = {
+              items: [processRow()],
+              nextOffset: null,
+              workflows: { JUCESP: stages, MEI: stages.slice(0, 7) },
+            };
+          else if (path === `processes/${processId}`)
+            data = {
+              ...processRow(),
+              stages,
+              returnStage: null,
+              events: [],
+              tasks: [],
+              evidence: [],
+            };
+          else if (path === `processes/${processId}/transitions`) {
+            if (blockTransition) {
+              blockTransition = false;
+              return route.fulfill({
+                status: 422,
+                contentType: "application/json",
+                body: JSON.stringify({
+                  error: {
+                    code: "BLOCKED",
+                    message: "Documento sintético pendente de aprovação",
+                  },
+                }),
+              });
+            }
+            const body = JSON.parse(route.request().postData());
+            processStage = body.targetStage;
+            processVersion++;
+            data = processRow();
+          } else if (path === "me")
             data = {
               user: {
                 id: userId,
@@ -241,6 +294,50 @@ const { mkdir } = require("node:fs/promises");
         await page.keyboard.press("Escape");
         if (await page.getByRole("dialog").count())
           throw Error("Escape failed");
+        await page
+          .getByRole("link", { name: "Funil comercial", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Funil comercial", exact: true })
+          .waitFor();
+        await page
+          .getByRole("button", { name: "Abrir ficha", exact: true })
+          .waitFor();
+        await page
+          .getByRole("link", { name: "Aberturas", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "Abrir processo", exact: true })
+          .click();
+        const dialog = page.getByRole("dialog", {
+          name: "Processo de abertura",
+        });
+        await dialog.getByLabel("Etapa de destino").selectOption("2");
+        await dialog.getByLabel("Checklist sintético").check();
+        await dialog
+          .getByLabel("Registro da etapa / motivo / próxima ação")
+          .fill("Conferência sintética concluída");
+        await dialog.getByRole("button", { name: "Salvar transição" }).click();
+        await dialog
+          .getByRole("alert")
+          .filter({ hasText: "Documento sintético pendente" })
+          .waitFor();
+        if (processStage !== 1) throw Error("Blocked transition changed stage");
+        await dialog.getByRole("button", { name: "Salvar transição" }).click();
+        await dialog
+          .getByRole("heading", { name: "2. Etapa sintética 2", exact: true })
+          .waitFor();
+        await dialog.getByRole("button", { name: "Fechar processo" }).click();
+        if (
+          await page.evaluate(
+            () => document.documentElement.scrollWidth > innerWidth,
+          )
+        )
+          throw Error("Operations page overflow");
+        await page.screenshot({
+          path: `test-results/operations-${viewport.width}.png`,
+          fullPage: true,
+        });
         if (errors.length) throw Error(errors.join(";"));
         console.log(
           `Synthetic dashboard ${viewport.width}px: list, assignment, documents, payment and keyboard OK`,

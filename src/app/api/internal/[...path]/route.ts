@@ -52,7 +52,11 @@ async function handle(
     } = await auth.auth.getSession();
     if (!session) return fail(401, "UNAUTHORIZED", "Sua sessão expirou.");
     const body = request.method === "GET" ? undefined : await request.text();
-    if (body && body.length > 8192)
+    const maxBody =
+      path[0] === "processes" && path.length === 3 && path[2] === "evidence"
+        ? 2850000
+        : 8192;
+    if (body && body.length > maxBody)
       return fail(413, "SIZE", "Solicitação muito grande.");
     const target = new URL(
       `/api/internal/v1/${path.map(encodeURIComponent).join("/")}`,

@@ -40,7 +40,7 @@ Login humano com senha e código TOTP, abertura de documento real e atribuição
 
 ## Próximas entregas
 
-Kanban/16 etapas e MEI separado, revisões documentais por versão, tarefas, SLAs e entregas finais continuam pendentes. Gestão visual de novos funcionários também não está nesta entrega; concessão é explícita, não automática. Não há aprovação documental, etapas ou métricas de receita fictícias.
+Kanban/16 etapas e MEI separado, revisões documentais por versão e tarefas evoluem na [Entrega 2](ENTREGA-2.md). SLAs e entrega final vinculada à empresa continuam pendentes. Gestão visual de novos funcionários também não está nesta entrega; concessão é explícita, não automática. Não há aprovação documental, etapas ou métricas de receita fictícias.
 
 Preservar índice único CPF até revisar a retomada/deduplicação. Corrigir idempotência/ordenação/efeitos do webhook antes de automatizar criação de processos. O rollout não dispara mensagens por conta própria; o portal mantém suas rotinas já existentes.
 

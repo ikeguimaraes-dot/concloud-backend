@@ -36,3 +36,5 @@ npm run test:browser
 - [Esteira de referência](docs/referencias/esteira-abertura-referencia.jpeg)
 
 Contrato implementado no portal: `docs/internal-api.openapi.yaml`. Kanban operacional, revisões por versão e SLAs continuam nas próximas entregas; não há simulações dessas funções no painel.
+
+Evolução de documentação, funil e operação: [Entrega 2](docs/ENTREGA-2.md).

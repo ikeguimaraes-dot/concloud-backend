@@ -16,6 +16,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { Operations, CommercialFunnel } from "./operations";
 import { browserAuth } from "@/lib/supabase";
 
 type Me = {
@@ -63,6 +64,11 @@ type Doc = {
   mime: string;
   size: number;
   uploadedAt: string;
+  versionId?: string;
+  reviewId?: string | null;
+  decision?: string;
+  reason?: string;
+  matchesPartners?: boolean;
 };
 type Member = { userId: string; displayName: string };
 const plans: Record<string, string> = {
@@ -293,6 +299,7 @@ export function Office() {
   );
 }
 function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
+  const [view, setView] = useState("cadastros");
   const [rows, setRows] = useState<Lead[]>([]),
     [staff, setStaff] = useState<Member[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
@@ -373,10 +380,30 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
         </div>
         <span className="nav-caption">OPERAÇÃO</span>
         <nav>
-          <a href="#cadastros" className="active">
+          <a
+            href="#cadastros"
+            onClick={() => setView("cadastros")}
+            className={view === "cadastros" ? "active" : ""}
+          >
             <Users size={19} />
             Cadastros
             <ChevronRight size={15} />
+          </a>
+          <a
+            href="#aberturas"
+            onClick={() => setView("aberturas")}
+            className={view === "aberturas" ? "active" : ""}
+          >
+            <ClipboardList size={19} />
+            Aberturas
+          </a>
+          <a
+            href="#funil"
+            onClick={() => setView("funil")}
+            className={view === "funil" ? "active" : ""}
+          >
+            <Users size={19} />
+            Funil comercial
           </a>
         </nav>
         <div className="sidebar-note">
@@ -408,7 +435,14 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
         <header className="topbar">
           <span>
             <LayoutDashboard size={16} />
-            Painel interno <ChevronRight size={13} /> <b>Cadastros</b>
+            Painel interno <ChevronRight size={13} />{" "}
+            <b>
+              {view === "cadastros"
+                ? "Cadastros"
+                : view === "funil"
+                  ? "Funil comercial"
+                  : "Aberturas"}
+            </b>
           </span>
           <div>
             <span className="private">
@@ -423,284 +457,311 @@ function Dashboard({ me, logout }: { me: Me; logout: () => Promise<void> }) {
             </button>
           </div>
         </header>
-        <main id="cadastros" className="content">
-          <div className="page-heading">
-            <div>
-              <span className="eyebrow">RELACIONAMENTO & OPERAÇÃO</span>
-              <h1>Cadastros</h1>
-              <p>Do primeiro contato à próxima etapa. Tudo começa aqui.</p>
-            </div>
-            <button
-              className="secondary"
-              onClick={() => setRefresh((v) => v + 1)}
-              disabled={loading}
+        <nav className="mobile-navigation" aria-label="Seções do painel">
+          {[
+            ["cadastros", "Cadastros"],
+            ["funil", "Funil comercial"],
+            ["aberturas", "Aberturas"],
+          ].map(([key, label]) => (
+            <a
+              key={key}
+              href={`#${key}`}
+              onClick={() => setView(key)}
+              aria-current={view === key ? "page" : undefined}
             >
-              <RefreshCw size={16} className={loading ? "spin" : ""} />
-              Atualizar
-            </button>
-          </div>
-          <div className="summary-strip">
-            <div>
-              <span className="summary-icon blue">
-                <Users size={21} />
-              </span>
+              {label}
+            </a>
+          ))}
+        </nav>
+        {view === "funil" ? (
+          <CommercialFunnel openLead={setSelected} />
+        ) : view === "aberturas" ? (
+          <Operations
+            openLead={setSelected}
+            canCreate={me.permissions.assign && me.permissions.documents}
+          />
+        ) : (
+          <main id="cadastros" className="content">
+            <div className="page-heading">
               <div>
-                <small>Nesta página</small>
-                <strong>
-                  {loading ? "—" : rows.length}
-                  <em> cadastros</em>
-                </strong>
+                <span className="eyebrow">RELACIONAMENTO & OPERAÇÃO</span>
+                <h1>Cadastros</h1>
+                <p>Do primeiro contato à próxima etapa. Tudo começa aqui.</p>
+              </div>
+              <button
+                className="secondary"
+                onClick={() => setRefresh((v) => v + 1)}
+                disabled={loading}
+              >
+                <RefreshCw size={16} className={loading ? "spin" : ""} />
+                Atualizar
+              </button>
+            </div>
+            <div className="summary-strip">
+              <div>
+                <span className="summary-icon blue">
+                  <Users size={21} />
+                </span>
+                <div>
+                  <small>Nesta página</small>
+                  <strong>
+                    {loading ? "—" : rows.length}
+                    <em> cadastros</em>
+                  </strong>
+                </div>
+              </div>
+              <div>
+                <span className="summary-icon orange">
+                  <ClipboardList size={21} />
+                </span>
+                <div>
+                  <small>Cadastros incompletos</small>
+                  <strong>
+                    {loading
+                      ? "—"
+                      : rows.filter((r) => r.status === "DRAFT").length}
+                    <em> nesta página</em>
+                  </strong>
+                </div>
+              </div>
+              <div>
+                <span className="summary-icon mint">
+                  <Wallet size={21} />
+                </span>
+                <div>
+                  <small>Pagamento inicial confirmado</small>
+                  <strong>
+                    {loading
+                      ? "—"
+                      : rows.filter((r) => r.paymentStatus === "PAID").length}
+                    <em> nesta página</em>
+                  </strong>
+                </div>
               </div>
             </div>
-            <div>
-              <span className="summary-icon orange">
-                <ClipboardList size={21} />
-              </span>
-              <div>
-                <small>Cadastros incompletos</small>
-                <strong>
-                  {loading
-                    ? "—"
-                    : rows.filter((r) => r.status === "DRAFT").length}
-                  <em> nesta página</em>
-                </strong>
+            <section className="list-card">
+              <div className="list-title">
+                <div>
+                  <h2>Todos os cadastros</h2>
+                  <p>
+                    Inclui cadastros parciais e sem pagamento no seu escopo de
+                    acesso.
+                  </p>
+                </div>
+                <span className="live-label">PORTAL CONCLOUD</span>
               </div>
-            </div>
-            <div>
-              <span className="summary-icon mint">
-                <Wallet size={21} />
-              </span>
-              <div>
-                <small>Pagamento inicial confirmado</small>
-                <strong>
-                  {loading
-                    ? "—"
-                    : rows.filter((r) => r.paymentStatus === "PAID").length}
-                  <em> nesta página</em>
-                </strong>
-              </div>
-            </div>
-          </div>
-          <section className="list-card">
-            <div className="list-title">
-              <div>
-                <h2>Todos os cadastros</h2>
-                <p>
-                  Inclui cadastros parciais e sem pagamento no seu escopo de
-                  acesso.
-                </p>
-              </div>
-              <span className="live-label">PORTAL CONCLOUD</span>
-            </div>
-            <div className="filters">
-              <form
-                className="search"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  reset();
-                  setSearch(query);
-                }}
-              >
-                <Search size={18} />
-                <input
-                  aria-label="Buscar nome, e-mail ou CPF"
-                  placeholder="Buscar nome, e-mail ou CPF"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                <button type="submit">Buscar</button>
-              </form>
-              <select
-                aria-label="Plano"
-                value={plan}
-                onChange={(e) => filter(setPlan, e.target.value)}
-              >
-                <option value="">Todos os planos</option>
-                {Object.entries(plans).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Cadastro"
-                value={status}
-                onChange={(e) => filter(setStatus, e.target.value)}
-              >
-                <option value="">Todos os cadastros</option>
-                {Object.entries(statuses).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Pagamento inicial"
-                value={payment}
-                onChange={(e) => filter(setPayment, e.target.value)}
-              >
-                <option value="">Todos os pagamentos</option>
-                {Object.entries(payments).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Responsável"
-                value={owner}
-                onChange={(e) => filter(setOwner, e.target.value)}
-              >
-                <option value="">Todos os responsáveis</option>
-                <option value="unassigned">Sem responsável</option>
-                {staff.map((s) => (
-                  <option key={s.userId} value={s.userId}>
-                    {s.displayName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {error ? (
-              <div className="empty error" role="alert">
-                <strong>Não foi possível atualizar os cadastros</strong>
-                <p>{error}</p>
-                <button
-                  className="secondary"
-                  onClick={() => setRefresh((v) => v + 1)}
+              <div className="filters">
+                <form
+                  className="search"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    reset();
+                    setSearch(query);
+                  }}
                 >
-                  Tentar novamente
-                </button>
+                  <Search size={18} />
+                  <input
+                    aria-label="Buscar nome, e-mail ou CPF"
+                    placeholder="Buscar nome, e-mail ou CPF"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                  <button type="submit">Buscar</button>
+                </form>
+                <select
+                  aria-label="Plano"
+                  value={plan}
+                  onChange={(e) => filter(setPlan, e.target.value)}
+                >
+                  <option value="">Todos os planos</option>
+                  {Object.entries(plans).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Cadastro"
+                  value={status}
+                  onChange={(e) => filter(setStatus, e.target.value)}
+                >
+                  <option value="">Todos os cadastros</option>
+                  {Object.entries(statuses).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Pagamento inicial"
+                  value={payment}
+                  onChange={(e) => filter(setPayment, e.target.value)}
+                >
+                  <option value="">Todos os pagamentos</option>
+                  {Object.entries(payments).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Responsável"
+                  value={owner}
+                  onChange={(e) => filter(setOwner, e.target.value)}
+                >
+                  <option value="">Todos os responsáveis</option>
+                  <option value="unassigned">Sem responsável</option>
+                  {staff.map((s) => (
+                    <option key={s.userId} value={s.userId}>
+                      {s.displayName}
+                    </option>
+                  ))}
+                </select>
               </div>
-            ) : loading ? (
-              <div className="empty" role="status">
-                <RefreshCw className="spin" />
-                <p>Carregando os cadastros…</p>
-              </div>
-            ) : rows.length === 0 ? (
-              <div className="empty">
-                <Users size={32} />
-                <strong>Nenhum cadastro encontrado</strong>
-                <p>
-                  Os cadastros do portal aparecerão aqui. Confira os filtros
-                  selecionados.
-                </p>
-              </div>
-            ) : (
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>CLIENTE / CONTATO</th>
-                      <th>PLANO</th>
-                      <th>CADASTRO</th>
-                      <th>PAGAMENTO INICIAL</th>
-                      <th>RESPONSÁVEL</th>
-                      <th>ÚLTIMA ATIVIDADE</th>
-                      <th>
-                        <span className="sr-only">Abrir ficha</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr key={row.id}>
-                        <td>
-                          <button
-                            className="person"
-                            onClick={() => setSelected(row.id)}
-                          >
-                            <span className="avatar">
-                              {row.name.slice(0, 1).toUpperCase()}
-                            </span>
-                            <span>
-                              <strong>{row.name}</strong>
-                              <small>{row.email}</small>
-                            </span>
-                          </button>
-                        </td>
-                        <td>
-                          <span className="plan-pill">
-                            {row.plan ? plans[row.plan] : "Não selecionado"}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge ${row.status === "DRAFT" ? "gray" : "blue-text"}`}
-                          >
-                            {statuses[row.status] ?? row.status}
-                          </span>
-                          <small className="cell-note">
-                            Formulário · etapa {row.funnelStep}
-                          </small>
-                        </td>
-                        <td>
-                          <Payment lead={row} />
-                        </td>
-                        <td>
-                          {row.ownerId ? (
-                            (staff.find((s) => s.userId === row.ownerId)
-                              ?.displayName ??
-                            (row.ownerId === me.user.id ? "Você" : "Atribuído"))
-                          ) : (
-                            <span className="muted">Não atribuído</span>
-                          )}
-                        </td>
-                        <td className="date-cell">
-                          {date(row.lastActivityAt)}
-                        </td>
-                        <td>
-                          <button
-                            className="icon-button"
-                            aria-label={`Abrir ficha de ${row.name}`}
-                            onClick={() => setSelected(row.id)}
-                          >
-                            <ChevronRight size={19} />
-                          </button>
-                        </td>
+              {error ? (
+                <div className="empty error" role="alert">
+                  <strong>Não foi possível atualizar os cadastros</strong>
+                  <p>{error}</p>
+                  <button
+                    className="secondary"
+                    onClick={() => setRefresh((v) => v + 1)}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : loading ? (
+                <div className="empty" role="status">
+                  <RefreshCw className="spin" />
+                  <p>Carregando os cadastros…</p>
+                </div>
+              ) : rows.length === 0 ? (
+                <div className="empty">
+                  <Users size={32} />
+                  <strong>Nenhum cadastro encontrado</strong>
+                  <p>
+                    Os cadastros do portal aparecerão aqui. Confira os filtros
+                    selecionados.
+                  </p>
+                </div>
+              ) : (
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>CLIENTE / CONTATO</th>
+                        <th>PLANO</th>
+                        <th>CADASTRO</th>
+                        <th>PAGAMENTO INICIAL</th>
+                        <th>RESPONSÁVEL</th>
+                        <th>ÚLTIMA ATIVIDADE</th>
+                        <th>
+                          <span className="sr-only">Abrir ficha</span>
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <footer className="list-footer">
-              <span>
-                {updated
-                  ? `Última consulta: ${date(updated)}`
-                  : "Aguardando consulta"}
-              </span>
-              <div>
-                <button
-                  className="page-button"
-                  disabled={!history.length || loading}
-                  onClick={() => {
-                    setCursor(history.at(-1) ?? null);
-                    setHistory((v) => v.slice(0, -1));
-                  }}
-                >
-                  <ArrowLeft size={14} />
-                  Anterior
-                </button>
-                <span>Página {history.length + 1}</span>
-                <button
-                  className="page-button"
-                  disabled={!next || loading}
-                  onClick={() => {
-                    setHistory((v) => [...v, cursor]);
-                    setCursor(next);
-                  }}
-                >
-                  Próxima
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </footer>
-          </section>
-          <div className="page-foot">
-            <ShieldCheck size={14} />
-            Os dados e documentos são acessíveis somente à equipe autorizada.
-          </div>
-        </main>
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => (
+                        <tr key={row.id}>
+                          <td>
+                            <button
+                              className="person"
+                              onClick={() => setSelected(row.id)}
+                            >
+                              <span className="avatar">
+                                {row.name.slice(0, 1).toUpperCase()}
+                              </span>
+                              <span>
+                                <strong>{row.name}</strong>
+                                <small>{row.email}</small>
+                              </span>
+                            </button>
+                          </td>
+                          <td>
+                            <span className="plan-pill">
+                              {row.plan ? plans[row.plan] : "Não selecionado"}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={`badge ${row.status === "DRAFT" ? "gray" : "blue-text"}`}
+                            >
+                              {statuses[row.status] ?? row.status}
+                            </span>
+                            <small className="cell-note">
+                              Formulário · etapa {row.funnelStep}
+                            </small>
+                          </td>
+                          <td>
+                            <Payment lead={row} />
+                          </td>
+                          <td>
+                            {row.ownerId ? (
+                              (staff.find((s) => s.userId === row.ownerId)
+                                ?.displayName ??
+                              (row.ownerId === me.user.id
+                                ? "Você"
+                                : "Atribuído"))
+                            ) : (
+                              <span className="muted">Não atribuído</span>
+                            )}
+                          </td>
+                          <td className="date-cell">
+                            {date(row.lastActivityAt)}
+                          </td>
+                          <td>
+                            <button
+                              className="icon-button"
+                              aria-label={`Abrir ficha de ${row.name}`}
+                              onClick={() => setSelected(row.id)}
+                            >
+                              <ChevronRight size={19} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <footer className="list-footer">
+                <span>
+                  {updated
+                    ? `Última consulta: ${date(updated)}`
+                    : "Aguardando consulta"}
+                </span>
+                <div>
+                  <button
+                    className="page-button"
+                    disabled={!history.length || loading}
+                    onClick={() => {
+                      setCursor(history.at(-1) ?? null);
+                      setHistory((v) => v.slice(0, -1));
+                    }}
+                  >
+                    <ArrowLeft size={14} />
+                    Anterior
+                  </button>
+                  <span>Página {history.length + 1}</span>
+                  <button
+                    className="page-button"
+                    disabled={!next || loading}
+                    onClick={() => {
+                      setHistory((v) => [...v, cursor]);
+                      setCursor(next);
+                    }}
+                  >
+                    Próxima
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </footer>
+            </section>
+            <div className="page-foot">
+              <ShieldCheck size={14} />
+              Os dados e documentos são acessíveis somente à equipe autorizada.
+            </div>
+          </main>
+        )}
       </div>
       {selected && (
         <LeadDrawer
@@ -1047,24 +1108,47 @@ function LeadDrawer({
                           : "Ainda não finalizada"}
                       </p>
                       {docs.map((doc) => (
-                        <div className="document" key={doc.id}>
-                          <FileText size={23} />
-                          <div>
-                            <strong>{doc.filename}</strong>
-                            <small>
-                              {doc.kind.replaceAll("-", " ")} ·{" "}
-                              {(doc.size / 1024).toFixed(0)} KB
-                            </small>
-                            <small>{date(doc.uploadedAt)}</small>
+                        <div key={doc.id}>
+                          <div className="document">
+                            <FileText size={23} />
+                            <div>
+                              <strong>{doc.filename}</strong>
+                              <small>
+                                {doc.kind.replaceAll("-", " ")} ·{" "}
+                                {(doc.size / 1024).toFixed(0)} KB
+                              </small>
+                              <small>
+                                {date(doc.uploadedAt)} ·{" "}
+                                {doc.decision === "APPROVED"
+                                  ? "Aprovado"
+                                  : doc.decision === "REJECTED"
+                                    ? "Correção solicitada"
+                                    : "Recebido — aguardando revisão"}
+                              </small>
+                              {doc.reason && <small>{doc.reason}</small>}
+                            </div>
+                            <button
+                              className="icon-button"
+                              aria-label={`Baixar ${doc.filename}`}
+                              disabled={busy}
+                              onClick={() => download(doc)}
+                            >
+                              <ArrowDownToLine size={19} />
+                            </button>
                           </div>
-                          <button
-                            className="icon-button"
-                            aria-label={`Baixar ${doc.filename}`}
-                            disabled={busy}
-                            onClick={() => download(doc)}
-                          >
-                            <ArrowDownToLine size={19} />
-                          </button>
+                          <DocumentVersions leadId={id} documentId={doc.id} />
+                          {doc.versionId && (
+                            <DocumentReview
+                              leadId={id}
+                              doc={doc}
+                              onChange={async () => {
+                                const data = await api<{ items: Doc[] }>(
+                                  `leads/${id}/documents`,
+                                );
+                                setDocs(data.items);
+                              }}
+                            />
+                          )}
                         </div>
                       ))}
                       {!docs.length && !docError && (
@@ -1129,6 +1213,151 @@ function Field({ label, value }: { label: string; value?: string | null }) {
     <div>
       <dt>{label}</dt>
       <dd>{value || "Não informado"}</dd>
+    </div>
+  );
+}
+
+function DocumentReview({
+  leadId,
+  doc,
+  onChange,
+}: {
+  leadId: string;
+  doc: Doc;
+  onChange: () => Promise<void>;
+}) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function review(decision: string) {
+    setBusy(true);
+    setError("");
+    try {
+      await api(`leads/${leadId}/documents/${doc.id}/reviews`, {
+        method: "POST",
+        body: JSON.stringify({
+          versionId: doc.versionId,
+          expectedReviewId: doc.reviewId ?? null,
+          decision,
+          reason,
+        }),
+      });
+      await onChange();
+      setReason("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Falha ao revisar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (doc.matchesPartners === false)
+    return (
+      <p className="notice">
+        Os sócios foram alterados após este envio. Solicite novo arquivo antes
+        de aprovar.
+      </p>
+    );
+  return (
+    <div className="review-form">
+      <label>
+        Motivo da correção de {doc.filename}
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          maxLength={2000}
+          placeholder="Descreva ao cliente o que deve ser corrigido"
+        />
+      </label>
+      <div className="review-actions">
+        <button disabled={busy} onClick={() => review("APPROVED")}>
+          Aprovar esta versão
+        </button>
+        <button
+          disabled={busy || reason.trim().length < 5}
+          onClick={() => review("REJECTED")}
+        >
+          Solicitar correção
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="notice error">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DocumentVersions({
+  leadId,
+  documentId,
+}: {
+  leadId: string;
+  documentId: string;
+}) {
+  const [items, setItems] = useState<
+      | {
+          id: string;
+          filename: string;
+          uploadedAt: string;
+          current: boolean;
+          reviews: {
+            id: string;
+            decision: string;
+            reason: string;
+            createdAt: string;
+          }[];
+        }[]
+      | null
+    >(null),
+    [error, setError] = useState("");
+  const root = `leads/${leadId}/documents/${documentId}/versions`;
+  async function show() {
+    try {
+      setItems((await api<{ items: NonNullable<typeof items> }>(root)).items);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function download(id: string) {
+    try {
+      const d = await api<{ url: string }>(`${root}/${id}/download`, {
+        method: "POST",
+        body: "{}",
+      });
+      const u = new URL(d.url, window.location.origin);
+      if (u.protocol !== "https:" && u.origin !== window.location.origin)
+        throw Error("Link inválido");
+      window.open(u.href, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  return (
+    <div className="document-history">
+      <button
+        className="text-button"
+        onClick={() => (items ? setItems(null) : show())}
+      >
+        {items ? "Ocultar versões" : "Histórico de versões e revisões"}
+      </button>
+      {error && <p role="alert">{error}</p>}
+      {items?.map((v) => (
+        <article key={v.id}>
+          <p>
+            {v.current ? "Atual" : "Substituído"} · {v.filename} ·{" "}
+            {date(v.uploadedAt)}
+          </p>
+          <button onClick={() => download(v.id)}>Baixar esta versão</button>
+          {v.reviews.map((r) => (
+            <p key={r.id}>
+              {r.decision === "APPROVED" ? "Aprovado" : "Correção solicitada"} ·{" "}
+              {date(r.createdAt)} {r.reason}
+            </p>
+          ))}
+          {!v.reviews.length && <p className="fine">Sem revisão.</p>}
+        </article>
+      ))}
     </div>
   );
 }
