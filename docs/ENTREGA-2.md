@@ -47,3 +47,7 @@ Advisors prévios: seis funções legadas ConCloud sem search_path fixo; nenhuma
 Migrations aplicadas e conferidas no projeto `peuqfdgkxkiaszrvpgmq`: 4 cadastros e 12 documentos preservados, 12 versões iniciais, zero aprovações fabricadas e zero processos criados automaticamente. A política de processos inclui `opening_access` explicitamente. Advisors após a alteração mantêm somente os seis avisos legados já encontrados antes.
 
 43 testes aprovados, 13 dependentes de PostgreSQL nativo ignorados; a suite PGlite roda efetivamente. Builds e TypeScript dos dois repositórios aprovados. Smoke de navegador cobre desktop e celular com dados sintéticos locais, sem movimentação de clientes reais.
+
+## Equipe — atualização de acesso
+
+Vitória Mariano e Igor Borges (`igor.borges@oscpaulistana.com.br`) possuem vínculo ativo de operador ASSISTANT, com documentos dos cadastros atribuídos e sem privilégios administrativos, readAll ou canAssign. As contas Auth existentes foram reutilizadas. Senhas definidas pelo administrador não são registradas no Git.
