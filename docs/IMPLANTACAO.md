@@ -81,3 +81,7 @@ Validação: 49 testes no portal aprovados (13 dependentes de PostgreSQL nativo 
 ## 26/10/2026 — favicon
 
 Painel reutiliza o ícone transparente oficial já presente no portal (`concloud-icon-2026.png`), declarado como icon, shortcut e apple-touch-icon. Build aprovado e tags conferidas no HTML gerado.
+
+## 27/10/2026 — administrador Igor Borges
+
+Por solicitação explícita do administrador, `igor.borges@oscpaulistana.com.br` passou de ASSISTANT para ORG_ADMIN somente no escritório ConCloud. Vínculos ativos; OpeningStaff com readAll, documents e canAssign habilitados. Atualização transacional com verificação de um único vínculo e confirmação de opening_access para leitura, documentos e atribuição em AAL1. Senha e demais organizações preservadas. A mudança de acesso é imediata no banco; atualizar a página recarrega as permissões no painel.
